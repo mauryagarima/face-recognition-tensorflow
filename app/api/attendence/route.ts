@@ -1,4 +1,35 @@
 import { MongoClient, ObjectId } from "mongodb";
+import type { NextRequest } from "next/server";
+
+export async function GET(request: NextRequest) {
+    const studentId = request.nextUrl.searchParams.get("studentId")
+
+    if (!studentId) {
+        return Response.json({ message: "Student ID is required" }, { status: 400 })
+    }
+
+    if (!ObjectId.isValid(studentId)) {
+        return Response.json({ message: "Invalid student ID" }, { status: 400 })
+    }
+
+    const client = new MongoClient(process.env.MONGODB_URI as string);
+
+    try {
+        await client.connect();
+        const db = client.db("ists")
+        const myAttendence = db.collection("attendence")
+        const result = await myAttendence
+            .find({ studentId: new ObjectId(studentId) })
+            .sort({ timestamp: -1 })
+            .toArray()
+
+        return Response.json(result, { status: 200 });
+    } catch {
+        return Response.json({ message: "not connected" }, { status: 500 })
+    } finally {
+        await client.close()
+    }
+}
 
 export async function POST(request: Request) {
 
@@ -32,8 +63,10 @@ export async function POST(request: Request) {
         return Response.json({ message: "Attendence marked successfully" }, { status: 200 })
 
 
-    } catch (error) {
+    } catch {
         return Response.json({ message: "not connected" }, { status: 500 })
+    } finally {
+        await client.close()
     }
 
 }

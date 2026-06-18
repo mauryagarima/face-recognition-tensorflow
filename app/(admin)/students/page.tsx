@@ -1,12 +1,11 @@
 "use client";
 
-import { ReloadOutlined, UserOutlined, UserAddOutlined } from "@ant-design/icons";
+import { EyeOutlined, UserOutlined, UserAddOutlined } from "@ant-design/icons";
 import {
   Alert,
   Avatar,
   Button,
   Card,
-  Progress,
   QRCode,
   Space,
   Table,
@@ -16,7 +15,7 @@ import {
 import type { TableProps } from "antd";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { AppShell } from "../components/AppShell";
+import { AppShell } from "../../components/AppShell";
 
 
 
@@ -32,21 +31,40 @@ export default function StudentsPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const initialise = async () => {
-    setLoading(true)
-    try {
-      const apiRes = await fetch("/api/students")
-      const data = await apiRes.json()
-      setStudents(data)
-    } catch (error) {
-      setError("Failed to fetch student records. Please try again later.");
-    }
-    setLoading(false)
-
-  }
-
   useEffect(() => {
-    initialise()
+    let isActive = true;
+
+    const loadStudents = async () => {
+      await Promise.resolve();
+
+      if (!isActive) {
+        return;
+      }
+
+      setLoading(true)
+      try {
+        const apiRes = await fetch("/api/students")
+        const data = await apiRes.json()
+
+        if (isActive) {
+          setStudents(data)
+        }
+      } catch {
+        if (isActive) {
+          setError("Failed to fetch student records. Please try again later.");
+        }
+      } finally {
+        if (isActive) {
+          setLoading(false)
+        }
+      }
+    };
+
+    void loadStudents();
+
+    return () => {
+      isActive = false;
+    };
   }, [])
 
 
@@ -90,10 +108,23 @@ export default function StudentsPage() {
         key:"qr",
         width: 120,
         render:(item,items)=><QRCode value={items._id}/>
+      },
+      {
+        title: "Action",
+        key: "action",
+        width: 120,
+        render: (_item, record) => (
+          <Button
+            icon={<EyeOutlined />}
+            onClick={() => router.push(`/students/${record.enrollmentNumber}`)}
+          >
+            View
+          </Button>
+        ),
       }
 
     ],
-    [],
+    [router],
   );
 
   return (
@@ -144,6 +175,7 @@ export default function StudentsPage() {
             dataSource={students}
             loading={loading}
             pagination={{ pageSize: 8 }}
+            rowKey="_id"
             scroll={{ x: 1060 }}
             className="students-table"
           />

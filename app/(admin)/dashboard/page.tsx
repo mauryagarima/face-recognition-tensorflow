@@ -10,7 +10,7 @@ import {
 } from "@ant-design/icons";
 import { Button, Card, Col, Progress, Row, Space, Statistic, Tag, Typography } from "antd";
 import { useRouter } from "next/navigation";
-import { AppShell } from "../components/AppShell";
+import { AppShell } from "../../components/AppShell";
 
 const activityItems = [
   "12 student profiles updated",

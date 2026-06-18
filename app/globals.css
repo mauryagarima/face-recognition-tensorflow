@@ -459,6 +459,14 @@ a:hover {
   padding-top: 18px;
 }
 
+.student-detail-heading {
+  min-width: 0;
+}
+
+.student-detail-heading .ant-space-item:last-child {
+  min-width: 0;
+}
+
 @media (max-width: 900px) {
   .auth-screen,
   .dashboard-content {

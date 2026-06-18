@@ -4,7 +4,7 @@ import { SaveOutlined } from "@ant-design/icons";
 import { Alert, App, Button, Card, Form, Input, Select, Space, Typography } from "antd";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { AppShell } from "../../components/AppShell";
+import { AppShell } from "../../../components/AppShell";
 
 type StudentFormValues = {
   branch: string;
