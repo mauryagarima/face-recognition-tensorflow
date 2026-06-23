@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect,useRef } from "react";
+import { useEffect, useRef } from "react";
 import { Html5QrcodeScanner } from "html5-qrcode";
 
 export default function QRScanner() {
@@ -18,16 +18,17 @@ export default function QRScanner() {
 
     scanner.render(
       async (decodedText) => {
-        if(waitForScanRef.current) return
+        if (waitForScanRef.current) return
         waitForScanRef.current = true
         console.log("QR Code:", decodedText);
+        const decodedTextSplitValue = decodedText.split("/")
         const apiRes = await fetch("/api/attendence", {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            qr: decodedText
+            qr: decodedTextSplitValue[decodedTextSplitValue.length - 1]
           })
         })
         if (apiRes.ok) {

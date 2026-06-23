@@ -107,7 +107,7 @@ export default function StudentsPage() {
         title:"QR",
         key:"qr",
         width: 120,
-        render:(item,items)=><QRCode value={items._id}/>
+        render:(item,items)=><QRCode value={`${window.location.origin}/profile/${items._id}`}/>
       },
       {
         title: "Action",
