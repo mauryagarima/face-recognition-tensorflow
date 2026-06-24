@@ -4,13 +4,13 @@ import type { NextRequest } from "next/server";
 export async function GET(request: NextRequest) {
     const studentId = request.nextUrl.searchParams.get("studentId")
 
-    if (!studentId) {
-        return Response.json({ message: "Student ID is required" }, { status: 400 })
-    }
+    // if (!studentId) {
+    //     return Response.json({ message: "Student ID is required" }, { status: 400 })
+    // }
 
-    if (!ObjectId.isValid(studentId)) {
-        return Response.json({ message: "Invalid student ID" }, { status: 400 })
-    }
+    // if (!ObjectId.isValid(studentId)) {
+    //     return Response.json({ message: "Invalid student ID" }, { status: 400 })
+    // }
 
     const client = new MongoClient(process.env.MONGODB_URI as string);
 
@@ -18,10 +18,34 @@ export async function GET(request: NextRequest) {
         await client.connect();
         const db = client.db("ists")
         const myAttendence = db.collection("attendence")
-        const result = await myAttendence
-            .find({ studentId: new ObjectId(studentId) })
-            .sort({ timestamp: -1 })
-            .toArray()
+        let result: any = [];
+        if (studentId) {
+            result = await myAttendence
+                .find({ studentId: new ObjectId(studentId) })
+                .sort({ timestamp: -1 })
+                .toArray()
+        } else {
+            result = await myAttendence.aggregate([
+                {
+                    $lookup: {
+                        from: "students",          // Target collection name
+                        localField: "studentId",   // Field in 'attendence' collection
+                        foreignField: "_id",       // Matching field in 'students' collection
+                        as: "studentId"          // Output array field name
+                    }
+                },
+                {
+                    $unwind: {
+                        path: "$studentId",
+                        preserveNullAndEmptyArrays: true // Keeps attendance even if student data is missing
+                    }
+                }
+            ])
+
+                .sort({ timestamp: -1 })
+                .toArray()
+        }
+
 
         return Response.json(result, { status: 200 });
     } catch {

@@ -8,9 +8,11 @@ import {
   PlusOutlined,
   TeamOutlined,
 } from "@ant-design/icons";
-import { Button, Card, Col, Progress, Row, Space, Statistic, Tag, Typography } from "antd";
+import { Button, Card, Col, Progress, Row, Skeleton, Space, Statistic, Tag, Typography } from "antd";
 import { useRouter } from "next/navigation";
 import { AppShell } from "../../components/AppShell";
+import AttendanceGraph from "@/app/components/AttendanceGraph";
+import { useEffect, useState } from "react";
 
 const activityItems = [
   "12 student profiles updated",
@@ -21,6 +23,26 @@ const activityItems = [
 
 export default function DashboardPage() {
   const router = useRouter();
+  const [studentCount, setStudentCount] = useState(0)
+  const [loading, setLoading] = useState(false)
+
+  const getStudentCounts = async () => {
+    try {
+      setLoading(true)
+      const apiRes = await fetch("/api/students/count")
+      const apiJson = await apiRes.json()
+      setStudentCount(apiJson.count)
+      setLoading(false)
+
+    } catch (error) {
+      setLoading(false)
+
+    }
+  }
+
+  useEffect(() => {
+    getStudentCounts()
+  }, [])
 
   return (
     <AppShell eyebrow="Overview" title="Dashboard">
@@ -53,27 +75,30 @@ export default function DashboardPage() {
         </section>
 
         <Row gutter={[16, 16]}>
-          <Col xs={24} sm={12} xl={6}>
-            <Card className="metric-card metric-blue">
-              <Statistic
-                title="Total Students"
-                value={1245}
-                prefix={<TeamOutlined />}
-              />
-              <Typography.Text className="metric-note">
-                Listed in student records
-              </Typography.Text>
-            </Card>
+          <Col
+            xs={24} sm={24} xl={24}
+          >
+            {loading ? <Skeleton active={loading} /> :
+              <Card className="metric-card metric-blue">
+                <Statistic
+                  title="Total Students"
+                  value={studentCount}
+                  prefix={<TeamOutlined />}
+                />
+                <Typography.Text className="metric-note">
+                  Listed in student records
+                </Typography.Text>
+              </Card>}
           </Col>
-          <Col xs={24} sm={12} xl={6}>
+          {/* <Col xs={24} sm={12} xl={6}>
             <Card className="metric-card metric-teal">
               <Statistic title="Active Courses" value={18} prefix={<BookOutlined />} />
               <Typography.Text className="metric-note">
                 3 new allocations
               </Typography.Text>
             </Card>
-          </Col>
-          <Col xs={24} sm={12} xl={6}>
+          </Col> */}
+          {/* <Col xs={24} sm={12} xl={6}>
             <Card className="metric-card metric-green">
               <Statistic
                 title="Verified Records"
@@ -85,60 +110,22 @@ export default function DashboardPage() {
                 104 pending checks
               </Typography.Text>
             </Card>
-          </Col>
-          <Col xs={24} sm={12} xl={6}>
+          </Col> */}
+          {/* <Col xs={24} sm={12} xl={6}>
             <Card className="metric-card metric-amber">
               <Statistic title="Open Requests" value={37} prefix={<FileDoneOutlined />} />
               <Typography.Text className="metric-note">11 due today</Typography.Text>
             </Card>
-          </Col>
+          </Col> */}
         </Row>
 
-        <Row gutter={[16, 16]}>
-          <Col xs={24} lg={15}>
-            <Card
-              className="section-card"
-              title="Admissions Flow"
-              extra={<Tag color="blue">This month</Tag>}
-            >
-              <Space orientation="vertical" size={20} className="full-width">
-                <div>
-                  <div className="progress-label">
-                    <Typography.Text>Applications reviewed</Typography.Text>
-                    <Typography.Text strong>76%</Typography.Text>
-                  </div>
-                  <Progress percent={76} showInfo={false} />
-                </div>
-                <div>
-                  <div className="progress-label">
-                    <Typography.Text>Documents verified</Typography.Text>
-                    <Typography.Text strong>68%</Typography.Text>
-                  </div>
-                  <Progress percent={68} showInfo={false} />
-                </div>
-                <div>
-                  <div className="progress-label">
-                    <Typography.Text>Student profiles completed</Typography.Text>
-                    <Typography.Text strong>84%</Typography.Text>
-                  </div>
-                  <Progress percent={84} showInfo={false} />
-                </div>
-              </Space>
-            </Card>
-          </Col>
-          <Col xs={24} lg={9}>
-            <Card className="section-card" title="Recent Updates">
-              <Space orientation="vertical" size={14} className="full-width">
-                {activityItems.map((item) => (
-                  <div className="activity-item" key={item}>
-                    <CheckCircleOutlined />
-                    <Typography.Text>{item}</Typography.Text>
-                  </div>
-                ))}
-              </Space>
-            </Card>
-          </Col>
+        <Row>
+          <Card style={{ width: "100%" }}>
+            <AttendanceGraph />
+          </Card>
         </Row>
+
+
       </Space>
     </AppShell>
   );
