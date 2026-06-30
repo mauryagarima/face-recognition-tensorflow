@@ -1,6 +1,10 @@
 "use client";
-
-import { EyeOutlined, UserOutlined, UserAddOutlined } from "@ant-design/icons";
+import {
+  EyeOutlined,
+  UserOutlined,
+  UserAddOutlined,
+  DeleteOutlined,
+} from "@ant-design/icons";
 import {
   Alert,
   Avatar,
@@ -67,7 +71,29 @@ export default function StudentsPage() {
     };
   }, [])
 
+const deleteStudent = async (id: string) => {
+  const confirmDelete = window.confirm(
+    "Are you sure you want to delete this student?"
+  );
 
+  if (!confirmDelete) return;
+
+  try {
+    const response = await fetch(`/api/students/id/${id}`, {
+      method: "DELETE",
+    });
+
+    
+
+    
+
+    const apiRes = await fetch("/api/students")
+        const data = await apiRes.json()
+        setStudents(data)
+  } catch {
+    alert("Failed to delete student");
+  }
+};
 
   const columns = useMemo<TableProps["columns"]>(
     () => [
@@ -104,24 +130,39 @@ export default function StudentsPage() {
         render: (semester: string) => <Tag color="geekblue">Semester {semester}</Tag>,
       },
       {
-        title:"QR",
-        key:"qr",
-        width: 120,
-        render:(item,items)=><QRCode value={`${window.location.origin}/profile/${items._id}`}/>
-      },
-      {
-        title: "Action",
-        key: "action",
-        width: 120,
-        render: (_item, record) => (
-          <Button
-            icon={<EyeOutlined />}
-            onClick={() => router.push(`/students/${record.enrollmentNumber}`)}
-          >
-            View
-          </Button>
-        ),
-      }
+        
+  title: "Action",
+  key: "action",
+  width: 300,
+  render: (_item, record) => (
+    <Space>
+      <Button
+        icon={<EyeOutlined />}
+        onClick={() =>
+          router.push(`/students/${record.enrollmentNumber}`)
+        }
+      >
+        View
+      </Button>
+
+      <Button
+      
+      >
+        Edit
+      </Button>
+
+      <Button
+        danger
+        icon={<DeleteOutlined />}
+        onClick={() => deleteStudent(record._id)}
+      >
+        Delete
+      </Button>
+    </Space>
+  ),
+}
+        
+      
 
     ],
     [router],
