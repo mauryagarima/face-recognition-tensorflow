@@ -34,7 +34,7 @@ export default function StudentsPage() {
   }>>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
-
+  const [deleteLoading, setDeleteLoading] = useState(false);
   useEffect(() => {
     let isActive = true;
 
@@ -71,29 +71,25 @@ export default function StudentsPage() {
     };
   }, [])
 
-const deleteStudent = async (id: string) => {
-  const confirmDelete = window.confirm(
-    "Are you sure you want to delete this student?"
-  );
+  const deleteStudent = async (id: string) => {
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this student?"
+    );
 
-  if (!confirmDelete) return;
-
-  try {
-    const response = await fetch(`/api/students/id/${id}`, {
-      method: "DELETE",
-    });
-
-    
-
-    
-
-    const apiRes = await fetch("/api/students")
-        const data = await apiRes.json()
-        setStudents(data)
-  } catch {
-    alert("Failed to delete student");
-  }
-};
+    if (!confirmDelete) return;
+    setDeleteLoading(true);
+    try {
+      const response = await fetch(`/api/students/id/${id}`, {
+        method: "DELETE",
+      });
+      const apiRes = await fetch("/api/students")
+      const data = await apiRes.json()
+      setStudents(data)
+      setDeleteLoading(false);
+    } catch {
+      alert("Failed to delete student");
+    }
+  };
 
   const columns = useMemo<TableProps["columns"]>(
     () => [
@@ -115,7 +111,7 @@ const deleteStudent = async (id: string) => {
           </Space>
         ),
       },
-      
+
       {
         title: "Branch",
         dataIndex: "branch",
@@ -130,39 +126,39 @@ const deleteStudent = async (id: string) => {
         render: (semester: string) => <Tag color="geekblue">Semester {semester}</Tag>,
       },
       {
-        
-  title: "Action",
-  key: "action",
-  width: 300,
-  render: (_item, record) => (
-    <Space>
-      <Button
-        icon={<EyeOutlined />}
-        onClick={() =>
-          router.push(`/students/${record.enrollmentNumber}`)
-        }
-      >
-        View
-      </Button>
 
-      <Button
-      
-      >
-        Edit
-      </Button>
+        title: "Action",
+        key: "action",
+        width: 300,
+        render: (_item, record) => (
+          <Space>
+            <Button
+              icon={<EyeOutlined />}
+              onClick={() =>
+                router.push(`/students/${record.enrollmentNumber}`)
+              }
+            >
+              View
+            </Button>
 
-      <Button
-        danger
-        icon={<DeleteOutlined />}
-        onClick={() => deleteStudent(record._id)}
-      >
-        Delete
-      </Button>
-    </Space>
-  ),
-}
-        
-      
+            <Button
+
+            >
+              Edit
+            </Button>
+
+            <Button
+              danger
+              icon={<DeleteOutlined />}
+              onClick={() => deleteStudent(record._id)}
+            >
+              Delete
+            </Button>
+          </Space>
+        ),
+      }
+
+
 
     ],
     [router],
@@ -214,7 +210,7 @@ const deleteStudent = async (id: string) => {
           <Table
             columns={columns}
             dataSource={students}
-            loading={loading}
+            loading={loading ||deleteLoading}
             pagination={{ pageSize: 8 }}
             rowKey="_id"
             scroll={{ x: 1060 }}
