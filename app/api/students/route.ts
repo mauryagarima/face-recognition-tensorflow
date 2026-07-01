@@ -1,11 +1,17 @@
 import { MongoClient } from "mongodb";
+import { cookies } from "next/headers";
+
 export async function GET() {
+    const cookieStore = await cookies();
+    const collegeId = cookieStore.get("user")?.value;
     const client = new MongoClient(process.env.MONGODB_URI as string);
+
     try {
         await client.connect();
-        const db = client.db("ists")
-        const myCollection = db.collection("students")
-        const result = await myCollection.find().toArray()
+        const db = client.db("ists");
+        const myCollection = db.collection("students");
+        const query = collegeId ? { collegeId } : {};
+        const result = await myCollection.find(query).toArray();
 
         return Response.json(result, { status: 200 });
     } catch {
@@ -36,13 +42,15 @@ export async function POST(request: Request) {
     if (!body.introduction) {
         return Response.json({ message: "Introduction is required" }, { status: 400 })
     }
+    const cookieStore = await cookies();
+    const collegeId = cookieStore.get("user")?.value;
     const client = new MongoClient(process.env.MONGODB_URI as string);
 
     try {
         await client.connect();
         const db = client.db("ists")
         const myCollection = db.collection("students")
-        const finded = await myCollection.findOne({ enrollmentNumber: body.enrollmentNumber })
+        const finded = await myCollection.findOne({ enrollmentNumber: body.enrollmentNumber, collegeId })
         if (finded) {
             return Response.json({ message: "Enrollment Number already exists" }, { status: 400 })
         }
@@ -55,7 +63,8 @@ export async function POST(request: Request) {
             introduction: body.introduction,
             first_year_marks: "",
             second_year_marks: "",
-            third_year_marks: ""
+            third_year_marks: "",
+            collegeId
         })
         if (result) {
             return Response.json({

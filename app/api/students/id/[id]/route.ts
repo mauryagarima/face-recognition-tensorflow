@@ -1,4 +1,5 @@
 import { MongoClient, ObjectId } from "mongodb";
+import { cookies } from "next/headers";
 
 export async function GET(request: Request,
     { params }: { params: Promise<{ id: string }> }
@@ -29,6 +30,8 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const cookieStore = await cookies();
+  const collegeId = cookieStore.get("user")?.value;
 
   const client = new MongoClient(process.env.MONGODB_URI as string);
 
@@ -40,6 +43,7 @@ export async function DELETE(
 
     const result = await students.deleteOne({
       _id: new ObjectId(id),
+      collegeId,
     });
 
     return Response.json(

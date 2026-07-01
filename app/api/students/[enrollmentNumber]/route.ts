@@ -1,17 +1,20 @@
 import { MongoClient } from "mongodb";
+import { cookies } from "next/headers";
 
 export async function GET(
     request: Request,
     { params }: { params: Promise<{ enrollmentNumber: string }> }
 ) {
     const { enrollmentNumber } = await params;
+    const cookieStore = await cookies();
+    const collegeId = cookieStore.get("user")?.value;
     const client = new MongoClient(process.env.MONGODB_URI as string);
 
     try {
         await client.connect();
         const db = client.db("ists");
         const myCollection = db.collection("students");
-        const result = await myCollection.findOne({ enrollmentNumber: String(enrollmentNumber) });
+        const result = await myCollection.findOne({ enrollmentNumber: String(enrollmentNumber), collegeId });
 
         if (result) {
             return Response.json(result, { status: 200 });
@@ -31,6 +34,8 @@ export async function PATCH(
     { params }: { params: Promise<{ enrollmentNumber: string }> }
 ) {
     const { enrollmentNumber } = await params;
+    const cookieStore = await cookies();
+    const collegeId = cookieStore.get("user")?.value;
     const body = await request.json();
     const currentEnrollmentNumber = String(body.currentEnrollmentNumber || enrollmentNumber || body.enrollmentNumber || "");
 
@@ -45,7 +50,7 @@ export async function PATCH(
 
         const db = client.db("ists");
         const myCollection = db.collection("students");
-        const existingStudent = await myCollection.findOne({ enrollmentNumber: currentEnrollmentNumber });
+        const existingStudent = await myCollection.findOne({ enrollmentNumber: currentEnrollmentNumber, collegeId });
 
         if (!existingStudent) {
             return Response.json({ message: "Student not found" }, { status: 404 });
@@ -83,7 +88,7 @@ export async function PATCH(
 
         if (body.enrollmentNumber !== undefined && body.enrollmentNumber !== "") {
             const nextEnrollmentNumber = String(body.enrollmentNumber).trim();
-            const duplicateStudent = await myCollection.findOne({ enrollmentNumber: nextEnrollmentNumber });
+            const duplicateStudent = await myCollection.findOne({ enrollmentNumber: nextEnrollmentNumber, collegeId });
 
             if (duplicateStudent && duplicateStudent._id.toString() !== existingStudent._id.toString()) {
                 return Response.json({ message: "Enrollment number already exists" }, { status: 400 });
@@ -97,7 +102,7 @@ export async function PATCH(
         }
 
         const updatedDoc = await myCollection.findOneAndUpdate(
-            { enrollmentNumber: currentEnrollmentNumber },
+            { enrollmentNumber: currentEnrollmentNumber, collegeId },
             { $set: updateFields },
             { returnDocument: "after" }
         );
