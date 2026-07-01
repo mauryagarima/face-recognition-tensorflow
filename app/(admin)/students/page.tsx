@@ -3,6 +3,7 @@ import {
   EyeOutlined,
   UserOutlined,
   UserAddOutlined,
+  EditOutlined,
   DeleteOutlined,
 } from "@ant-design/icons";
 import {
@@ -21,6 +22,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "../../components/AppShell";
 
+const QR_CODE_PREFIX = "student:";
+
 
 
 export default function StudentsPage() {
@@ -35,6 +38,7 @@ export default function StudentsPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [hiddenQrCodes, setHiddenQrCodes] = useState<string[]>([]);
   useEffect(() => {
     let isActive = true;
 
@@ -91,6 +95,12 @@ export default function StudentsPage() {
     }
   };
 
+  const removeQrCode = (id: string) => {
+    setHiddenQrCodes((current) =>
+      current.includes(id) ? current : [...current, id]
+    );
+  };
+
   const columns = useMemo<TableProps["columns"]>(
     () => [
       {
@@ -126,7 +136,36 @@ export default function StudentsPage() {
         render: (semester: string) => <Tag color="geekblue">Semester {semester}</Tag>,
       },
       {
+        title: "QR Code",
+        key: "qrCode",
+        width: 180,
+        render: (_value, record) => {
+          if (hiddenQrCodes.includes(record._id)) {
+            return <Tag color="default">QR removed</Tag>;
+          }
 
+          return (
+            <Space direction="vertical" size={4} align="center">
+              <QRCode
+                value={`${QR_CODE_PREFIX}${record.enrollmentNumber}`}
+                size={72}
+                errorLevel="H"
+              />
+              <Button
+                size="small"
+                danger
+                onClick={(event) => {
+                  event.stopPropagation();
+                  removeQrCode(record._id);
+                }}
+              >
+                Delete
+              </Button>
+            </Space>
+          );
+        },
+      },
+      {
         title: "Action",
         key: "action",
         width: 300,
@@ -141,11 +180,17 @@ export default function StudentsPage() {
               View
             </Button>
 
-            <Button
 
+            <Button
+              type="primary"
+              onClick={() =>
+                router.push(`/students/${record.enrollmentNumber}`)
+              }
             >
               Edit
             </Button>
+
+
 
             <Button
               danger
@@ -154,14 +199,14 @@ export default function StudentsPage() {
             >
               Delete
             </Button>
-          </Space>
+          </Space >
         ),
       }
 
 
 
     ],
-    [router],
+    [hiddenQrCodes, router],
   );
 
   return (
@@ -210,7 +255,7 @@ export default function StudentsPage() {
           <Table
             columns={columns}
             dataSource={students}
-            loading={loading ||deleteLoading}
+            loading={loading || deleteLoading}
             pagination={{ pageSize: 8 }}
             rowKey="_id"
             scroll={{ x: 1060 }}
