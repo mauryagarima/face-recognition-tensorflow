@@ -7,6 +7,14 @@ export async function POST(request: Request) {
     return Response.json({ message: "Email is required" }, { status: 400 });
   }
 
+  if (!body.petName) {
+    return Response.json({ message: "Pet name is required" }, { status: 400 });
+  }
+
+  if (!body.firstSchoolName) {
+    return Response.json({ message: "First school name is required" }, { status: 400 });
+  }
+
   if (!body.password) {
     return Response.json({ message: "New password is required" }, { status: 400 });
   }
@@ -19,7 +27,11 @@ export async function POST(request: Request) {
     const colleges = db.collection("colleges");
 
     const result = await colleges.updateOne(
-      { email: body.email },
+      {
+        email: body.email,
+        petName: body.petName,
+        firstSchoolName: body.firstSchoolName,
+      },
       { $set: { password: body.password } }
     );
 

@@ -201,6 +201,22 @@ const SignInPage = () => {
           </Form.Item>
 
           <Form.Item
+            label="Pet name"
+            name="petName"
+            rules={[{ required: true, message: "Pet name is required" }]}
+          >
+            <Input placeholder="Enter your pet name" autoComplete="off" />
+          </Form.Item>
+
+          <Form.Item
+            label="First school name"
+            name="firstSchoolName"
+            rules={[{ required: true, message: "First school name is required" }]}
+          >
+            <Input placeholder="Enter your first school name" autoComplete="off" />
+          </Form.Item>
+
+          <Form.Item
             label="New password"
             name="password"
             rules={[{ required: true, message: "New password is required" }]}
