@@ -11,7 +11,11 @@ import {
   Avatar,
   Button,
   Card,
+  Form,
+  Input,
+  Modal,
   QRCode,
+  Select,
   Space,
   Table,
   Tag,
@@ -24,21 +28,44 @@ import { AppShell } from "../../components/AppShell";
 
 const QR_CODE_PREFIX = "student:";
 
+type StudentRecord = {
+  _id: string;
+  name: string;
+  enrollmentNumber: string;
+  branch: string;
+  semester: string;
+  introduction?: string;
+};
 
+const branchOptions = [
+  "Computer Science",
+  "Data Science",
+  "Mechanical Engineering",
+  "Business Administration",
+  "Electronics",
+  "Civil Engineering",
+].map((branch) => ({ label: branch, value: branch }));
+
+const semesterOptions = Array.from({ length: 8 }, (_, index) => {
+  const semester = String(index + 1);
+
+  return {
+    label: `Semester ${semester}`,
+    value: semester,
+  };
+});
 
 export default function StudentsPage() {
   const router = useRouter();
-  const [students, setStudents] = useState<Array<{
-    _id: string,
-    name: string;
-    enrollmentNumber: number,
-    branch: string;
-    semester: number
-  }>>([]);
+  const [students, setStudents] = useState<StudentRecord[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [editLoading, setEditLoading] = useState(false);
   const [hiddenQrCodes, setHiddenQrCodes] = useState<string[]>([]);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingStudent, setEditingStudent] = useState<StudentRecord | null>(null);
+  const [form] = Form.useForm();
   useEffect(() => {
     let isActive = true;
 
@@ -101,7 +128,55 @@ export default function StudentsPage() {
     );
   };
 
-  const columns = useMemo<TableProps["columns"]>(
+  const openEditModal = (student: StudentRecord) => {
+    setEditingStudent(student);
+    form.setFieldsValue({
+      name: student.name,
+      enrollmentNumber: student.enrollmentNumber,
+      branch: student.branch,
+      semester: student.semester,
+      introduction: student.introduction || "",
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditSubmit = async (values: Record<string, string>) => {
+    if (!editingStudent) {
+      return;
+    }
+
+    try {
+      setEditLoading(true);
+      const response = await fetch(`/api/students/${editingStudent.enrollmentNumber}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...values,
+          currentEnrollmentNumber: editingStudent.enrollmentNumber,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to update student");
+      }
+
+      const apiRes = await fetch("/api/students");
+      const data = await apiRes.json();
+      setStudents(data);
+      setIsEditModalOpen(false);
+      setEditingStudent(null);
+      form.resetFields();
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Failed to update student");
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const columns = useMemo<TableProps<StudentRecord>["columns"]>(
     () => [
       {
         title: "Enrollment No.",
@@ -181,12 +256,7 @@ export default function StudentsPage() {
             </Button>
 
 
-            <Button
-              type="primary"
-              onClick={() =>
-                router.push(`/students/${record.enrollmentNumber}`)
-              }
-            >
+            <Button type="primary" onClick={() => openEditModal(record)}>
               Edit
             </Button>
 
@@ -206,7 +276,7 @@ export default function StudentsPage() {
 
 
     ],
-    [hiddenQrCodes, router],
+    [form, hiddenQrCodes, router],
   );
 
   return (
@@ -263,6 +333,56 @@ export default function StudentsPage() {
           />
         </Card>
       </Space>
+
+      <Modal
+        title="Edit Student"
+        open={isEditModalOpen}
+        onCancel={() => {
+          setIsEditModalOpen(false);
+          setEditingStudent(null);
+          form.resetFields();
+        }}
+        onOk={() => form.submit()}
+        confirmLoading={editLoading}
+      >
+        <Form form={form} layout="vertical" onFinish={handleEditSubmit}>
+          <Form.Item
+            label="Student name"
+            name="name"
+            rules={[{ required: true, message: "Student name is required" }]}
+          >
+            <Input placeholder="Enter student name" />
+          </Form.Item>
+
+          <Form.Item
+            label="Enrollment number"
+            name="enrollmentNumber"
+            rules={[{ required: true, message: "Enrollment number is required" }]}
+          >
+            <Input placeholder="Enter enrollment number" />
+          </Form.Item>
+
+          <Form.Item
+            label="Branch"
+            name="branch"
+            rules={[{ required: true, message: "Branch is required" }]}
+          >
+            <Select placeholder="Select branch" options={branchOptions} />
+          </Form.Item>
+
+          <Form.Item
+            label="Semester"
+            name="semester"
+            rules={[{ required: true, message: "Semester is required" }]}
+          >
+            <Select placeholder="Select semester" options={semesterOptions} />
+          </Form.Item>
+
+          <Form.Item label="Introduction" name="introduction">
+            <Input.TextArea placeholder="Enter student introduction" />
+          </Form.Item>
+        </Form>
+      </Modal>
     </AppShell>
   );
 }

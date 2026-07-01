@@ -1,79 +1,109 @@
 import { MongoClient } from "mongodb";
 
-export async function GET(request: Request,
+export async function GET(
+    request: Request,
     { params }: { params: Promise<{ enrollmentNumber: string }> }
 ) {
-    const { enrollmentNumber } = await params
+    const { enrollmentNumber } = await params;
     const client = new MongoClient(process.env.MONGODB_URI as string);
 
     try {
         await client.connect();
-        const db = client.db("ists")
-        const myCollection = db.collection("students")
-        const result = await myCollection.findOne({ enrollmentNumber: String(enrollmentNumber) })
+        const db = client.db("ists");
+        const myCollection = db.collection("students");
+        const result = await myCollection.findOne({ enrollmentNumber: String(enrollmentNumber) });
+
         if (result) {
             return Response.json(result, { status: 200 });
-        } else {
-            return Response.json({ message: "Student not found" }, { status: 404 })
         }
 
+        return Response.json({ message: "Student not found" }, { status: 404 });
     } catch {
         return Response.json(
             { message: "not connected" },
-            { status: 500, });
+            { status: 500 }
+        );
     }
 }
 
-export async function PATCH(request: Request) {
-    const body = await request.json()
+export async function PATCH(
+    request: Request,
+    { params }: { params: Promise<{ enrollmentNumber: string }> }
+) {
+    const { enrollmentNumber } = await params;
+    const body = await request.json();
+    const currentEnrollmentNumber = String(body.currentEnrollmentNumber || enrollmentNumber || body.enrollmentNumber || "");
 
-    console.log("body", body);
-
-
-    if (!body.enrollmentNumber) {
-        return Response.json(
-            { message: "enrollmentNumber not found" },
-            { status: 400, });
-    }
-    if (!body.first_year_marks) {
-        return Response.json(
-            { message: "first_year_marks not found" },
-            { status: 400, });
+    if (!currentEnrollmentNumber) {
+        return Response.json({ message: "enrollmentNumber not found" }, { status: 400 });
     }
 
     const client = new MongoClient(process.env.MONGODB_URI as string);
 
     try {
-        await client.connect()
+        await client.connect();
 
-        const db = client.db("ists")
-        const myCollection = db.collection("students")
-        const result = await myCollection.findOne({ enrollmentNumber: String(body.enrollmentNumber) })
-        if (!result) {
-            return Response.json({ message: "Student not found" }, { status: 404 })
+        const db = client.db("ists");
+        const myCollection = db.collection("students");
+        const existingStudent = await myCollection.findOne({ enrollmentNumber: currentEnrollmentNumber });
+
+        if (!existingStudent) {
+            return Response.json({ message: "Student not found" }, { status: 404 });
         }
-        const updatedDoc = await myCollection.findOneAndUpdate(
-            { enrollmentNumber: String(body.enrollmentNumber) },
-            {
-                $set: {
-                    first_year_marks: body.first_year_marks,
-                    second_year_marks: body.second_year_marks,
-                    third_year_marks: body.third_year_marks,
-                },
-            },
-            {
-                returnDocument: "after", // MongoDB Node.js Driver v4+
-                // returnOriginal: false  // Older versions
+
+        const updateFields: Record<string, unknown> = {};
+
+        if (typeof body.name === "string" && body.name.trim()) {
+            updateFields.name = body.name.trim();
+        }
+
+        if (typeof body.branch === "string" && body.branch.trim()) {
+            updateFields.branch = body.branch.trim();
+        }
+
+        if (body.semester !== undefined && body.semester !== "") {
+            updateFields.semester = String(body.semester);
+        }
+
+        if (typeof body.introduction === "string") {
+            updateFields.introduction = body.introduction;
+        }
+
+        if (typeof body.first_year_marks === "string") {
+            updateFields.first_year_marks = body.first_year_marks;
+        }
+
+        if (typeof body.second_year_marks === "string") {
+            updateFields.second_year_marks = body.second_year_marks;
+        }
+
+        if (typeof body.third_year_marks === "string") {
+            updateFields.third_year_marks = body.third_year_marks;
+        }
+
+        if (body.enrollmentNumber !== undefined && body.enrollmentNumber !== "") {
+            const nextEnrollmentNumber = String(body.enrollmentNumber).trim();
+            const duplicateStudent = await myCollection.findOne({ enrollmentNumber: nextEnrollmentNumber });
+
+            if (duplicateStudent && duplicateStudent._id.toString() !== existingStudent._id.toString()) {
+                return Response.json({ message: "Enrollment number already exists" }, { status: 400 });
             }
+
+            updateFields.enrollmentNumber = nextEnrollmentNumber;
+        }
+
+        if (Object.keys(updateFields).length === 0) {
+            return Response.json({ message: "No update fields provided" }, { status: 400 });
+        }
+
+        const updatedDoc = await myCollection.findOneAndUpdate(
+            { enrollmentNumber: currentEnrollmentNumber },
+            { $set: updateFields },
+            { returnDocument: "after" }
         );
-        return Response.json({ message: "Marks updated", updatedDoc })
 
-
+        return Response.json({ message: "Student updated", updatedDoc });
     } catch (error) {
-        console.log("error", error);
-
-        return Response.json({ message: "ERROR", error }, { status: 500 })
-
+        return Response.json({ message: "ERROR", error }, { status: 500 });
     }
-
 }
